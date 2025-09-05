@@ -3,7 +3,7 @@ export default function Layout({ children }) {
     <div className="min-h-screen bg-[#f9f1db] flex flex-col items-center">
       {/* 헤더 */}
       <header className="w-full bg-[#f5c16c] p-4 text-center font-bold text-lg flex items-center justify-center relative">
-        <img src="/logo.png" alt="logo" className="w-6 h-6 mr-2" />
+        <img src="/logo.png" alt="logo" className="w-12 h-10 mr-2" />
         이런식빵
         <span className="absolute right-4 text-xs">개발: 윤준석, 김유미</span>
       </header>

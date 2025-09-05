@@ -107,7 +107,7 @@ export default function OrderPage() {
           className="w-full border rounded p-2 mb-2"
         />
         <textarea
-          placeholder="배송 받으실 주소"
+          placeholder="배송 받으실 주소 (OO관 OO호 형식으로 자세히 작성해주세요!)"
           value={address}
           onChange={(e) => setAddress(e.target.value)}
           className="w-full border rounded p-2 mb-2"
