@@ -1,9 +1,14 @@
 import { useState } from "react";
+import Link from "next/link";
 import useOrderStore from "../store/orderStore";
 import Layout from "../components/Layout";
+import { hasActiveOrderStrict } from "../utils/validators";
 
 export default function StatusPage() {
   const { items, customer } = useOrderStore();
+
+  // 활성 주문확인
+  const hasActiveOrder = hasActiveOrderStrict(customer, items);
 
   const [status, setStatus] = useState("확인중"); 
   // 가능한 값: "확인중", "조리중", "배달중", "완료", "취소"
@@ -19,6 +24,27 @@ export default function StatusPage() {
     setStatus(nextStatus[status] || "확인중");
   };
 
+  // 활성 주문이 없으면 주문 내역이 없다고 띄움
+  if (!hasActiveOrder) {
+    return (
+      <Layout>
+        <h1 className="text-xl font-bold text-center my-4">주문 현황</h1>
+        <div className="bg-white p-6 rounded-xl shadow text-center">
+          <p className="font-bold mb-2">주문 내역이 없습니다.</p>
+          <p className="text-sm text-gray-500 mb-4">
+            메인 화면에서 주문을 접수해 주세요.
+          </p>
+          <Link href="/">
+            <button className="w-full bg-yellow-400 text-black font-bold py-3 rounded-xl">
+              메인으로
+            </button>
+          </Link>
+        </div>
+      </Layout>
+    );
+  }
+
+  // 활성 주문이 있다면 정보 띄우고 배송 현황 출력
   return (
     <Layout>
       <h1 className="text-xl font-bold text-center my-4">주문 현황</h1>

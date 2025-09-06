@@ -1,15 +1,29 @@
+import { useEffect, useMemo } from "react";
 import { useRouter } from "next/router";
 import useOrderStore from "../store/orderStore";
 import Layout from "../components/Layout";
+import { hasActiveOrderStrict } from "../utils/validators";
 
 export default function PaymentPage() {
   const router = useRouter();
   const { items, customer, resetOrder } = useOrderStore();
 
-  const totalPrice = items.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0
+  // 활성 주문 판단: 메뉴가 있고, 이름이 비어있지 않을 때
+  const hasActiveOrder = hasActiveOrderStrict(customer, items);
+
+  // 총액 계산(메모이제이션 useMemo)
+  const totalPrice = useMemo(
+    () => items.reduce((sum, item) => sum + item.price * item.quantity, 0),
+    [items]
   );
+
+  // 활성 주문이 없으면 메인으로 돌려보내기
+  // 🔁 [CHANGE] 유효하지 않으면 메인이 아니라 주문화면으로 유도 (바로 수정 가능)
+  useEffect(() => {
+    if (!hasActiveOrder) {
+      router.replace("/order");
+    }
+  }, [hasActiveOrder, router]);
 
   const handlePaymentComplete = () => {
     alert("송금 완료 확인 요청을 보냈습니다.");
@@ -17,11 +31,22 @@ export default function PaymentPage() {
   };
 
   const handleCancel = () => {
-    if (confirm("주문을 취소하시겠습니까?")) {
+    if (window.confirm("주문을 취소하시겠습니까?")) {
       resetOrder();
       router.push("/");
     }
   };
+
+  // 리다이렌트 직전 잠깐 깜빡임 방지
+  if (!hasActiveOrder) {
+    return (
+      <Layout>
+        <div className="text-center py-12 text-sm text-gray-500">
+          이동 중…
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -70,6 +95,7 @@ export default function PaymentPage() {
         <button
           className="w-full bg-green-400 text-black font-bold py-3 rounded-xl"
           onClick={handlePaymentComplete}
+          disabled={!hasActiveOrder || totalPrice <= 0}
         >
           송금 완료했어요
         </button>
