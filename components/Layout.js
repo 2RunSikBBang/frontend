@@ -1,6 +1,6 @@
 export default function Layout({ children }) {
   return (
-    <div className="min-h-screen bg-[#f9f1db] flex flex-col items-center">
+    <div className="min-h-screen bg-[#f9f1db] text-neutral-900 antialiased flex flex-col items-center">
       {/* 헤더 */}
       <header className="w-full bg-[#f5c16c] p-4 text-center font-bold text-lg flex items-center justify-center relative">
         <img src="/logo.png" alt="logo" className="w-12 h-10 mr-2" />

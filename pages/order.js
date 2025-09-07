@@ -126,7 +126,7 @@ export default function OrderPage() {
         />
         {/* 형식 안내 */}
         {!isValidPhone(phone) && phone.length > 0 && (
-          <p className="text-xs text-red-500 mb-2">
+          <p className="text-xs text-blue-500 mb-2">
             전화번호는 010-1234-1234 형식이어야 해요.
           </p>
         )}

@@ -6,13 +6,13 @@ export default function Home() {
     <Layout>
       <main className="flex flex-col gap-6 mt-20 w-4/5 mx-auto">
         <Link href="/order">
-          <button className="w-full bg-yellow-400 text-brown-900 font-bold py-4 rounded-xl shadow text-lg">
+          <button className="w-full bg-yellow-400 font-bold py-4 rounded-xl shadow text-lg">
             🚴 배달 주문하기
           </button>
         </Link>
 
         <Link href="/status">
-          <button className="w-full bg-green-500 text-brown-900 font-bold py-4 rounded-xl shadow text-lg">
+          <button className="w-full bg-green-500 font-bold py-4 rounded-xl shadow text-lg">
             내 주문내역 조회
           </button>
         </Link>
