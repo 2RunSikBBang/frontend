@@ -69,7 +69,7 @@ export default function PaymentPage() {
         ) : (
           <p>주문 내역이 없습니다.</p>
         )}
-        <p className="font-bold">총 금액: {totalPrice.toLocaleString()}원</p>
+        <p className="font-bold">총 금액: {totalPrice.toLocaleString("ko-KR")}원</p>
       </div>
 
       {/* 주문자 정보 */}

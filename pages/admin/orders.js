@@ -62,7 +62,7 @@ export default function AdminOrdersPage() {
             <div className="flex items-start justify-between">
               <div>
                 <div className="font-bold">
-                  주문 일시 : {new Date(o.createdAt).toLocaleString()}
+                  주문 일시 : {new Date(o.createdAt).toLocaleString("ko-KR")}
                 </div>
                 <div className="text-sm text-gray-600">
                   주문 번호 : {String(o.no).padStart(5, "0")}

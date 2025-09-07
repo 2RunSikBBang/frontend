@@ -10,10 +10,10 @@ export default function OrderPage() {
 
   // 메뉴 정의
   const menuList = [
-    { id: 1, name: "누텔라바나나 토스트(하프)", price: 3500 },
-    { id: 2, name: "누텔라바나나 토스트(풀)", price: 5500 },
-    { id: 3, name: "블루베리크림치즈 토스트(하프)", price: 3500 },
-    { id: 4, name: "블루베리크림치즈 토스트(풀)", price: 5500 },
+    { id: 1, name: "누텔라바나나 토스트(레귤러)", price: 3300 },
+    { id: 2, name: "누텔라바나나 토스트(라지)", price: 5500 },
+    { id: 3, name: "블루베리크림치즈 토스트(레귤러)", price: 3300 },
+    { id: 4, name: "블루베리크림치즈 토스트(라지)", price: 5500 },
   ];
 
   // 로컬 상태 (UI 조작용)
@@ -78,7 +78,7 @@ export default function OrderPage() {
       <div className="bg-white p-4 rounded-xl shadow mb-4">
         <h2 className="font-bold mb-2">
           1. 메뉴 선택{" "}
-          <span className="text-red-500 text-sm">(하프 3,500원 | 풀 5,500원)</span>
+          <span className="text-red-500 text-sm">(레귤러 3,300원 | 라지 5,500원)</span>
         </h2>
         {menuList.map((menu) => (
           <div key={menu.id} className="flex justify-between items-center mb-2">
