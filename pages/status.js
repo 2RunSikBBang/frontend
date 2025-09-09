@@ -10,6 +10,18 @@ export default function StatusPage() {
   const router = useRouter();
   const { items, customer } = useOrderStore();
 
+  const [status, setStatus] = useState("확인중"); // 데모용 상태
+  const handleRefresh = () => {
+    const next = {
+      확인중: "조리중",
+      조리중: "배달중",
+      배달중: "완료",
+      완료: "완료",
+      취소: "취소",
+    };
+    setStatus(next[status] || "확인중");
+  };
+
   // 1) 우선순위: 쿼리 ?phone → 없으면 Zustand의 customer.phone
   const queryPhone =
     typeof router.query.phone === "string" ? router.query.phone : "";
@@ -51,19 +63,6 @@ export default function StatusPage() {
       </Layout>
     );
   }
-
-  // ===== 활성 주문 화면 =====
-  const [status, setStatus] = useState("확인중"); // 데모용 상태
-  const handleRefresh = () => {
-    const next = {
-      확인중: "조리중",
-      조리중: "배달중",
-      배달중: "완료",
-      완료: "완료",
-      취소: "취소",
-    };
-    setStatus(next[status] || "확인중");
-  };
 
   return (
     <Layout>
