@@ -1,50 +1,70 @@
-import { useState } from "react";
+// pages/status.js
+import { useState, useMemo } from "react";
 import Link from "next/link";
+import { useRouter } from "next/router";
 import useOrderStore from "../store/orderStore";
 import Layout from "../components/Layout";
 import { hasActiveOrderStrict } from "../utils/validators";
 
 export default function StatusPage() {
+  const router = useRouter();
   const { items, customer } = useOrderStore();
 
-  // 활성 주문확인
+  // 1) 우선순위: 쿼리 ?phone → 없으면 Zustand의 customer.phone
+  const queryPhone =
+    typeof router.query.phone === "string" ? router.query.phone : "";
+  const phoneToUse = queryPhone || customer?.phone || "";
+
+  // 2) 활성 주문 판단(이름/전화/주소+아이템 모두 유효)
   const hasActiveOrder = hasActiveOrderStrict(customer, items);
 
-  const [status, setStatus] = useState("확인중"); 
-  // 가능한 값: "확인중", "조리중", "배달중", "완료", "취소"
+  // 3) 표시 가능 여부
+  //    - 쿼리폰이 있으면: 내 로컬 주문의 phone과 일치해야 함 (백엔드 전 단계)
+  //    - 쿼리폰이 없으면: /payment 경로 → 로컬 주문만 있으면 OK
+  const canShow = useMemo(() => {
+    if (!hasActiveOrder) return false;
+    if (queryPhone) return queryPhone === customer.phone;
+    return true; // /payment → 로컬 주문 존재 시 통과
+  }, [hasActiveOrder, queryPhone, customer?.phone]);
 
+  // 4) 표시 불가 → /status-lookup 안내
+  if (!phoneToUse || !canShow) {
+    return (
+      <Layout>
+        <h1 className="text-xl font-bold text-center my-4">주문 현황</h1>
+        <div className="bg-white p-6 rounded-xl shadow text-center">
+          <p className="font-bold mb-2">해당 번호로 조회 가능한 주문이 없습니다.</p>
+          <div className="space-y-2">
+            <button
+              className="w-full bg-yellow-400 text-black font-bold py-3 rounded-xl"
+              onClick={() => router.replace("/status-lookup")}
+            >
+              휴대폰 번호로 조회하기
+            </button>
+            <Link href="/">
+              <button className="w-full bg-gray-300 text-black font-bold py-3 rounded-xl">
+                메인으로
+              </button>
+            </Link>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  // ===== 활성 주문 화면 =====
+  const [status, setStatus] = useState("확인중"); // 데모용 상태
   const handleRefresh = () => {
-    const nextStatus = {
+    const next = {
       확인중: "조리중",
       조리중: "배달중",
       배달중: "완료",
       완료: "완료",
       취소: "취소",
     };
-    setStatus(nextStatus[status] || "확인중");
+    setStatus(next[status] || "확인중");
   };
 
-  // 활성 주문이 없으면 주문 내역이 없다고 띄움
-  if (!hasActiveOrder) {
-    return (
-      <Layout>
-        <h1 className="text-xl font-bold text-center my-4">주문 현황</h1>
-        <div className="bg-white p-6 rounded-xl shadow text-center">
-          <p className="font-bold mb-2">주문 내역이 없습니다.</p>
-          <p className="text-sm text-gray-500 mb-4">
-            메인 화면에서 주문을 접수해 주세요.
-          </p>
-          <Link href="/">
-            <button className="w-full bg-yellow-400 text-black font-bold py-3 rounded-xl">
-              메인으로
-            </button>
-          </Link>
-        </div>
-      </Layout>
-    );
-  }
-
-  // 활성 주문이 있다면 정보 띄우고 배송 현황 출력
   return (
     <Layout>
       <h1 className="text-xl font-bold text-center my-4">주문 현황</h1>
@@ -89,22 +109,27 @@ export default function StatusPage() {
           <p className="text-gray-700 font-bold">배달이 완료되었습니다 ✅</p>
         )}
         {status === "취소" && (
-          <p className="text-red-500 font-bold">
-            미입금으로 주문이 취소되었습니다 ❌
-          </p>
+          <p className="text-red-500 font-bold">미입금으로 주문이 취소되었습니다 ❌</p>
         )}
         <p>주문내역 확인 시, 아직 송금 전이라면 주문이 거절될 수 있어요.</p>
         <p>주문 및 결제 후 취소는 전화로만 가능합니다.</p>
         <p>취소 요청: 010-1111-2222</p>
       </div>
 
-      {/* 새로고침 버튼 */}
-      <button
-        className="w-full bg-yellow-400 text-black font-bold py-3 rounded-xl"
-        onClick={handleRefresh}
-      >
-        새로고침
-      </button>
+      {/* 액션 버튼 */}
+      <div className="space-y-2">
+        <button
+          className="w-full bg-yellow-400 text-black font-bold py-3 rounded-xl"
+          onClick={handleRefresh}
+        >
+          새로고침
+        </button>
+        <Link href="/">
+          <button className="w-full bg-gray-300 text-black font-bold py-3 rounded-xl">
+            메인으로
+          </button>
+        </Link>
+      </div>
     </Layout>
   );
 }

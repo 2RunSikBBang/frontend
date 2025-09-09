@@ -11,7 +11,7 @@ export default function Home() {
           </button>
         </Link>
 
-        <Link href="/status">
+        <Link href="/status-lookup">
           <button className="w-full bg-green-500 font-bold py-4 rounded-xl shadow text-lg">
             내 주문내역 조회
           </button>

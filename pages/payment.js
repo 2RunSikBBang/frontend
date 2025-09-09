@@ -86,7 +86,7 @@ export default function PaymentPage() {
         <p className="text-sm mb-4">주문자명과 입금자명이 일치해야 합니다.</p>
         <p className="text-center font-bold">신한은행 110-218-986002 김효원</p>
         <p className="text-center text-blue-500 font-bold">
-          입금할 금액: {totalPrice.toLocaleString()}원
+          입금할 금액: {totalPrice.toLocaleString("ko-KR")}원
         </p>
       </div>
 
