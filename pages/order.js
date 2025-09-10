@@ -47,6 +47,8 @@ export default function OrderPage() {
     setPhone(formatted);
   };
 
+  
+
   // 결제 진입 가능 여부(메뉴, 이름, 전화번호, 주소 입력했을때만)
   const selectedItems = menuList
     .filter((menu) => quantities[menu.id] > 0)
@@ -129,6 +131,7 @@ export default function OrderPage() {
           <p className="text-xs text-blue-500 mb-2">
             전화번호는 010-1234-1234 형식이어야 해요.
           </p>
+          
         )}
         <textarea
           placeholder="배송 받으실 주소 (OO관 OO호 형식으로 자세히 작성해주세요!)"

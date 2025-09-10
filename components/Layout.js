@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function Layout({ children }) {
   return (
     <div className="min-h-screen bg-[#f9f1db] text-neutral-900 antialiased flex flex-col items-center">
@@ -14,6 +16,8 @@ export default function Layout({ children }) {
       {/* 푸터 */}
       <footer className="w-full bg-[#f5c16c] p-2 text-center text-xs text-gray-700">
         © 2025 이런식빵. All Rights Reserved.
+        <span className="mx-1">·</span>
+        <Link href="/privacy" className="underline">개인정보처리방침</Link>
       </footer>
     </div>
   );
