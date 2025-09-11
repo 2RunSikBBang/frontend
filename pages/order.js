@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useRouter } from "next/router";
 import useOrderStore from "../store/orderStore";
 import Layout from "../components/Layout";
+import Link from "next/link";
 import { hasActiveOrderStrict, formatPhoneKR, isValidPhone } from "../utils/validators";
 
 export default function OrderPage() {
@@ -170,9 +171,9 @@ export default function OrderPage() {
           />
           <span>
             위 내용을 확인하였으며, <b>개인정보 수집·이용에 동의합니다(필수)</b>.{" "}
-            <a href="/privacy" className="underline">
+            <Link href="/privacy" className="underline">
               자세히 보기
-            </a>
+            </Link>
           </span>
         </label>
 
