@@ -46,7 +46,7 @@ export default function StatusLookupPage() {
           onClick={() => router.push("/")}
           className="w-full bg-gray-300 text-black font-bold py-3 rounded-xl mt-2"
         >
-          메인으로
+          메인화면으로
         </button>
       </form>
     </Layout>

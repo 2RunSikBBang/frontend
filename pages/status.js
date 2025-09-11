@@ -78,7 +78,7 @@ export default function StatusPage() {
 
       {/* 주문 내역 */}
       <div className="bg-white p-4 rounded-xl shadow mb-4">
-        <h2 className="font-bold mb-2">주문 내역</h2>
+        <h2 className="font-bold mb-2">주문내역</h2>
         {items.length > 0 ? (
           <ul>
             {items.map((item) => (
@@ -88,7 +88,7 @@ export default function StatusPage() {
             ))}
           </ul>
         ) : (
-          <p>주문 내역이 없습니다.</p>
+          <p>주문내역이 없습니다.</p>
         )}
       </div>
 
@@ -125,7 +125,7 @@ export default function StatusPage() {
         </button>
         <Link href="/">
           <button className="w-full bg-gray-300 text-black font-bold py-3 rounded-xl">
-            메인으로
+            메인화면으로
           </button>
         </Link>
       </div>
