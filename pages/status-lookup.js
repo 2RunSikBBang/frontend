@@ -20,7 +20,8 @@ export default function StatusLookupPage() {
       setError("전화번호는 010-1234-1234 형식이어야 해요.");
       return;
     }
-    router.push(`/status?phone=${encodeURIComponent(phone)}`);
+    const cleaned = phone.replace(/\D/g, "");
+    router.push(`/status?phone=${encodeURIComponent(cleaned)}`);
   };
 
   return (
@@ -36,6 +37,7 @@ export default function StatusLookupPage() {
           onChange={onChange}
           maxLength={13}
           className="w-full border rounded p-3 mb-2"
+          autoComplete="tel"
         />
         {error && <p className="text-sm text-red-600 mb-2">{error}</p>}
         <button type="submit" className="w-full bg-yellow-400 text-black font-bold py-3 rounded-xl">

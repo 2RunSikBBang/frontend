@@ -7,7 +7,7 @@ export default function Layout({ children }) {
       <header className="w-full bg-[#f5c16c] p-4 text-center font-bold text-lg flex items-center justify-center relative">
         <img src="/logo.png" alt="logo" className="w-12 h-10 mr-2" />
         이런식빵
-        <span className="absolute right-4 text-xs">개발: 윤준석, 김유미</span>
+        <span className="absolute right-4 text-xs">개발: 윤준석, 김유미 | 기획: 송치호</span>
       </header>
 
       {/* 본문 */}

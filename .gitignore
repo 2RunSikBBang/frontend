@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+echo # env (do not commit)
+echo .env.local
+echo .env.*.local

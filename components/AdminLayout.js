@@ -7,7 +7,7 @@ export default function AdminLayout({ children }) {
         <img src="/logo.png" alt="logo" className="w-12 h-10 mr-2" />
         이런식빵
         <span className="ml-2 text-sm text-red-600">관리자용</span>
-        <span className="absolute right-4 text-xs">개발: 윤준석, 김유미</span>
+        <span className="absolute right-4 text-xs">개발: 윤준석, 김유미 | 기획: 송치호</span>
       </header>
 
       {/* 본문 */}

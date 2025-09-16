@@ -1,57 +1,99 @@
 // pages/status.js
-import { useState, useMemo } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import useOrderStore from "../store/orderStore";
 import Layout from "../components/Layout";
-import { hasActiveOrderStrict } from "../utils/validators";
+import { getOrdersByPhone } from "../services/guestApi";
+
+// 사용자에게 노출할 상태 라벨/색상 (진행중만 사용)
+const ORDER_STATUS_LABELS = {
+  PENDING: "주문을 확인하고 있습니다",
+  PREPARING: "조리중입니다 🍞",
+  DELIVERING: "배달중입니다 🛵",
+};
+const ORDER_STATUS_COLOR = {
+  PENDING: "text-black",
+  PREPARING: "text-blue-600",
+  DELIVERING: "text-yellow-600",
+};
+
+// 진행중만 표시
+const ACTIVE_SET = new Set(["PENDING", "PREPARING", "DELIVERING"]);
+
+// 유틸
+function fmtPhone(v) {
+  const d = String(v || "").replace(/\D/g, "");
+  if (d.length === 11 && d.startsWith("010")) return `010-${d.slice(3, 7)}-${d.slice(7)}`;
+  return v || "";
+}
+function fmtTime(iso) {
+  try {
+    const d = new Date(iso);
+    if (isNaN(d)) return "-";
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    let hh = d.getHours();
+    const ap = hh < 12 ? "오전" : "오후";
+    hh = hh % 12 || 12;
+    const mi = String(d.getMinutes()).padStart(2, "0");
+    return `${mm}/${dd} ${ap} ${hh}:${mi}`;
+  } catch {
+    return "-";
+  }
+}
 
 export default function StatusPage() {
   const router = useRouter();
-  const { items, customer } = useOrderStore();
+  const queryPhone = typeof router.query.phone === "string" ? router.query.phone : "";
 
-  const [status, setStatus] = useState("확인중"); // 데모용 상태
-  const handleRefresh = () => {
-    const next = {
-      확인중: "조리중",
-      조리중: "배달중",
-      배달중: "완료",
-      완료: "완료",
-      취소: "취소",
-    };
-    setStatus(next[status] || "확인중");
-  };
+  const [ordersAll, setOrdersAll] = useState([]); // 전체(최신순)
+  const [loading, setLoading] = useState(false);
 
-  // 1) 우선순위: 쿼리 ?phone → 없으면 Zustand의 customer.phone
-  const queryPhone =
-    typeof router.query.phone === "string" ? router.query.phone : "";
-  const phoneToUse = queryPhone || customer?.phone || "";
+  const fetchAll = useCallback(async () => {
+    if (!queryPhone) return;
+    try {
+      setLoading(true);
+      const list = await getOrdersByPhone(queryPhone);
+      setOrdersAll(Array.isArray(list) ? list : []);
+    } catch {
+      setOrdersAll([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [queryPhone]);
 
-  // 2) 활성 주문 판단(이름/전화/주소+아이템 모두 유효)
-  const hasActiveOrder = hasActiveOrderStrict(customer, items);
+  useEffect(() => {
+    if (queryPhone) fetchAll();
+  }, [queryPhone, fetchAll]);
 
-  // 3) 표시 가능 여부
-  //    - 쿼리폰이 있으면: 내 로컬 주문의 phone과 일치해야 함 (백엔드 전 단계)
-  //    - 쿼리폰이 없으면: /payment 경로 → 로컬 주문만 있으면 OK
-  const canShow = useMemo(() => {
-    if (!hasActiveOrder) return false;
-    if (queryPhone) return queryPhone === customer.phone;
-    return true; // /payment → 로컬 주문 존재 시 통과
-  }, [hasActiveOrder, queryPhone, customer?.phone]);
+  // 진행중만 추리기
+  const activeOrders = ordersAll.filter((o) => ACTIVE_SET.has(o.status));
 
-  // 4) 표시 불가 → /status-lookup 안내
-  if (!phoneToUse || !canShow) {
+  // 로딩
+  if (loading) {
+    return (
+      <Layout>
+        <div className="text-center py-12 text-sm text-gray-500">불러오는 중…</div>
+      </Layout>
+    );
+  }
+
+  // 진행중 주문이 하나도 없으면 안내
+  if (!queryPhone || activeOrders.length === 0) {
     return (
       <Layout>
         <h1 className="text-xl font-bold text-center my-4">주문 현황</h1>
         <div className="bg-white p-6 rounded-xl shadow text-center">
-          <p className="font-bold mb-2">해당 번호로 조회 가능한 주문이 없습니다.</p>
+          <p className="font-bold mb-2">진행 중인 주문이 없습니다.</p>
+          <p className="text-sm text-gray-600 mb-4">
+            최근에 완료되었거나 취소된 주문은 개인정보 보호를 위해 표시하지 않습니다.
+          </p>
           <div className="space-y-2">
             <button
               className="w-full bg-yellow-400 text-black font-bold py-3 rounded-xl"
               onClick={() => router.replace("/status-lookup")}
             >
-              휴대폰 번호로 조회하기
+              다른 번호로 조회하기
             </button>
             <Link href="/">
               <button className="w-full bg-gray-300 text-black font-bold py-3 rounded-xl">
@@ -64,69 +106,66 @@ export default function StatusPage() {
     );
   }
 
+  // 공통 표시용(가장 최근 진행중 주문)
+  const base = activeOrders[0];
+  const baseCustomer = base.customer || {};
+
   return (
     <Layout>
       <h1 className="text-xl font-bold text-center my-4">주문 현황</h1>
 
-      {/* 주문자 정보 */}
+      {/* 주문자 (진행중 주문이 있을 때만 노출) */}
       <div className="bg-white p-4 rounded-xl shadow mb-4">
         <h2 className="font-bold mb-2">주문자</h2>
-        <p>성명: {customer.name || "홍길동"}</p>
-        <p>연락처: {customer.phone || "010-0000-0000"}</p>
-        <p>주소: {customer.address || "주소 없음"}</p>
+        <p>성명: {baseCustomer.name || "—"}</p>
+        <p>연락처: {fmtPhone(baseCustomer.phone || queryPhone)}</p>
+        <p>주소: {baseCustomer.address || "—"}</p>
       </div>
 
-      {/* 주문 내역 */}
-      <div className="bg-white p-4 rounded-xl shadow mb-4">
-        <h2 className="font-bold mb-2">주문내역</h2>
-        {items.length > 0 ? (
-          <ul>
-            {items.map((item) => (
-              <li key={item.id}>
-                {item.name} x {item.quantity}개
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p>주문내역이 없습니다.</p>
-        )}
+      {/* 진행중 주문 목록 */}
+      <div className="space-y-3 mb-4">
+        {activeOrders.map((o) => {
+          const statusText = ORDER_STATUS_LABELS[o.status] ?? o.status;
+          const statusClass = ORDER_STATUS_COLOR[o.status] ?? "text-black";
+          return (
+            <div key={o.orderId ?? o.orderDateMs} className="bg-white rounded-xl shadow p-4">
+              <div className="flex justify-between mb-2">
+                <div className="text-sm text-gray-500">{fmtTime(o.orderDate)}</div>
+              </div>
+
+              <div className="text-sm mb-2">
+                <span className={`${statusClass} font-bold`}>{statusText}</span>
+                {" "}
+                <span className="text-gray-600 ml-1">
+                  {o.totalPrice ? `· 총 ${o.totalPrice.toLocaleString("ko-KR")}원` : ""}
+                </span>
+              </div>
+
+              <div className="text-sm">
+                {o.items?.length ? (
+                  <ul className="list-disc pl-5">
+                    {o.items.map((it, i) => (
+                      <li key={i}>
+                        {it.name} x {it.quantity}개
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p>주문내역이 없습니다.</p>
+                )}
+              </div>
+            </div>
+          );
+        })}
       </div>
 
-      {/* 주문 현황 */}
-      <div className="bg-white p-6 rounded-xl shadow text-center mb-4">
-        <h2 className="font-bold mb-2">현재 상태</h2>
-        {status === "확인중" && (
-          <p className="text-blue-500 font-bold">주문을 확인하고 있습니다</p>
-        )}
-        {status === "조리중" && (
-          <p className="text-orange-500 font-bold">조리중입니다 🍞</p>
-        )}
-        {status === "배달중" && (
-          <p className="text-green-500 font-bold">배달중입니다 🛵</p>
-        )}
-        {status === "완료" && (
-          <p className="text-gray-700 font-bold">배달이 완료되었습니다 ✅</p>
-        )}
-        {status === "취소" && (
-          <p className="text-red-500 font-bold">미입금으로 주문이 취소되었습니다 ❌</p>
-        )}
-        <p>주문내역 확인 시, 아직 송금 전이라면 주문이 거절될 수 있어요.</p>
-        <p>주문 및 결제 후 취소는 전화로만 가능합니다.</p>
-        <p>취소 요청: 010-1111-2222</p>
-      </div>
-
-      {/* 액션 버튼 */}
+      {/* 액션 */}
       <div className="space-y-2">
-        <button
-          className="w-full bg-yellow-400 text-black font-bold py-3 rounded-xl"
-          onClick={handleRefresh}
-        >
+        <button className="w-full bg-yellow-400 text-black font-bold py-3 rounded-xl" onClick={fetchAll}>
           새로고침
         </button>
         <Link href="/">
-          <button className="w-full bg-gray-300 text-black font-bold py-3 rounded-xl">
-            메인화면으로
-          </button>
+          <button className="w-full bg-gray-300 text-black font-bold py-3 rounded-xl">메인으로</button>
         </Link>
       </div>
     </Layout>

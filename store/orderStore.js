@@ -1,20 +1,21 @@
+// /store/orderStore.js
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 const useOrderStore = create(
   persist(
     (set) => ({
-      customer: { name:"", phone:"", address:"" },
+      customer: { name: "", phone: "", address: "" },
       items: [],
-      orderId: null,
       setCustomer: (customer) => set({ customer }),
       setItems: (items) => set({ items }),
-      setOrderId: (id) => set({ orderId: id }),
-      resetOrder: () => set({ customer:{ name:"", phone:"", address:"" }, items:[], orderId:null }),
+      resetOrder: () =>
+        set({ customer: { name: "", phone: "", address: "" }, items: [] }),
     }),
-    { name: "thiswaybread_order" } // localStorage 키
+    { name: "thiswaybread_order" } // 기존 키 유지(로컬에 남아있는 orderId는 그냥 무시됨)
   )
 );
 
 export default useOrderStore;
+
 
