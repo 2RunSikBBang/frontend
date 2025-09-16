@@ -63,7 +63,6 @@ export default function PaymentPage() {
     try {
       setSubmitting(true);
 
-      // 서버에 실제 주문 생성 (이제 여기서!)
       const payload = {
         customer: {
           name: customer.name,

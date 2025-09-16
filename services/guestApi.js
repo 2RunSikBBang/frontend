@@ -1,5 +1,5 @@
 // services/guestApi.js
-import api from "../lib/axios";
+import { apiPublic as api } from "../lib/axios";
 
 const STORE_ID = process.env.NEXT_PUBLIC_STORE_ID;
 

@@ -108,11 +108,9 @@ export default function OrderPage() {
       return;
     }
 
-    // 서버에 주문을 만들지 않고, 로컬만 저장
     setItems(selectedItems);
     setCustomer({ name, phone, address });
 
-    // 결제 페이지로 이동
     router.push("/payment");
   };
 
