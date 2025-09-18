@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 export default function Layout({ children }) {
   return (
@@ -9,8 +10,13 @@ export default function Layout({ children }) {
         <span className="absolute left-4 text-xs">개발: 윤준석, 김유미</span>
 
         {/* 가운데: 로고 + 이름 */}
-        <img src="/logo.png" alt="logo" className="w-12 h-10 mr-2" />
-        이런식빵
+        <Image
+  src="/logo.png"
+  alt="ThisWay Bread"
+  width={128}  // 실제 렌더링 크기에 맞춰 지정
+  height={32}
+  className="h-8 w-auto"
+/>
 
         {/* 오른쪽: 기획 */}
         <span className="absolute right-4 text-xs">기획: 송치호</span>
