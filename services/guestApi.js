@@ -150,3 +150,25 @@ export async function createGuestOrder({ customer, items }) {
   const amount = orderItems.reduce((s, it) => s + it.price * it.quantity, 0);
   return { orderId: data?.data?.orderId ?? data?.data?.id ?? null, amount };
 }
+
+export async function getPublicStoreDetail() {
+  const { apiPublic: api } = await import("../lib/axios"); // 안전 import (빌드/테스트 환경 대응)
+  const STORE_ID = process.env.NEXT_PUBLIC_STORE_ID;
+
+  const { data } = await api.get(`/guest/stores/${STORE_ID}/info`, {
+    params: { _ts: Date.now() },
+    headers: { "Cache-Control": "no-cache" },
+  });
+  if (data && data.success === false) throw new Error(data.message || "가게 정보 조회 실패");
+  const d = data?.data || {};
+  return {
+    id: d?.id ?? STORE_ID,
+    name: String(d?.name || ""),
+    profileImageUrl: d?.profileImageUrl || "",
+    productImageUrls: Array.isArray(d?.productImageUrls) ? d.productImageUrls : [],
+    refundPolicy: String(d?.refundPolicy || ""),
+    bankAccount: String(d?.bankAccount || ""),
+    cancelPhoneNumber: String(d?.cancelPhoneNumber || ""), // ← 상태페이지의 “전화 추가주문” 버튼에 사용
+    statusMessage: String(d?.statusMessage || ""),
+  };
+}

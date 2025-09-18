@@ -107,8 +107,10 @@ export default function PaymentPage() {
   return (
     <Layout>
       <h1 className="text-xl font-bold text-center my-4">결제가 필요해요</h1>
-      <p className="text-center text-sm mb-4">
-        주문내역은 잘 접수되었어요. 입금 확인 후 조리가 시작돼요.
+      <p className="text-center text-xs mb-4">
+        아래계좌로 송금하신 뒤,
+        <b>'송금 완료했어요'</b>. 버튼을 눌러 주문을 접수해 주세요
+        <p>입금 확인 후 조리가 시작돼요.</p>
       </p>
 
       {/* 주문 내역 */}

@@ -122,7 +122,7 @@ export default function OrderPage() {
       <div className="bg-white p-4 rounded-xl shadow mb-4">
         <h2 className="font-bold mb-2">
           1. 메뉴 선택{" "}
-          <span className="text-red-500 text-sm">(반 3,300원 | 하나 5,500원)</span>
+          <span className="text-red-500 text-sm">(개당 3,900원)</span>
         </h2>
 
         {loading && <p className="text-sm text-gray-500">메뉴를 불러오는 중...</p>}

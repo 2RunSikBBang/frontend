@@ -5,9 +5,15 @@ export default function Layout({ children }) {
     <div className="min-h-screen bg-[#f9f1db] text-neutral-900 antialiased flex flex-col items-center">
       {/* 헤더 */}
       <header className="w-full bg-[#f5c16c] p-4 text-center font-bold text-lg flex items-center justify-center relative">
+        {/* 왼쪽: 개발자 */}
+        <span className="absolute left-4 text-xs">개발: 윤준석, 김유미</span>
+
+        {/* 가운데: 로고 + 이름 */}
         <img src="/logo.png" alt="logo" className="w-12 h-10 mr-2" />
         이런식빵
-        <span className="absolute right-4 text-xs">개발: 윤준석, 김유미 | 기획: 송치호</span>
+
+        {/* 오른쪽: 기획 */}
+        <span className="absolute right-4 text-xs">기획: 송치호</span>
       </header>
 
       {/* 본문 */}

@@ -1,26 +1,23 @@
 // pages/status.js
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import Layout from "../components/Layout";
-import { getOrdersByPhone } from "../services/guestApi";
+import { getOrdersByPhone, getPublicStoreDetail } from "../services/guestApi";
 
-// 사용자에게 노출할 상태 라벨/색상 (진행중만 사용)
 const ORDER_STATUS_LABELS = {
   PENDING: "주문을 확인하고 있습니다",
   PREPARING: "조리중입니다 🍞",
   DELIVERING: "배달중입니다 🛵",
 };
 const ORDER_STATUS_COLOR = {
-  PENDING: "text-black",
-  PREPARING: "text-blue-600",
-  DELIVERING: "text-yellow-600",
+  PENDING: "text-blue-600",
+  PREPARING: "text-yellow-600",
+  DELIVERING: "text-green-600",
 };
 
-// 진행중만 표시
 const ACTIVE_SET = new Set(["PENDING", "PREPARING", "DELIVERING"]);
 
-// 유틸
 function fmtPhone(v) {
   const d = String(v || "").replace(/\D/g, "");
   if (d.length === 11 && d.startsWith("010")) return `010-${d.slice(3, 7)}-${d.slice(7)}`;
@@ -46,8 +43,36 @@ export default function StatusPage() {
   const router = useRouter();
   const queryPhone = typeof router.query.phone === "string" ? router.query.phone : "";
 
-  const [ordersAll, setOrdersAll] = useState([]); // 전체(최신순)
+  const [ordersAll, setOrdersAll] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [callNumber, setCallNumber] = useState("");
+
+  // ✅ 추가: 계좌 안내 + 복사 상태/유틸
+  const [bankLine, setBankLine] = useState("");
+  const [copied, setCopied] = useState(false);
+  function extractAccountDigits(line) {
+    return String(line || "").replace(/\D/g, "");
+  }
+  async function copyAccount() {
+    const digitsOnly = extractAccountDigits(bankLine) || bankLine;
+    try {
+      await navigator.clipboard.writeText(digitsOnly);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      const el = document.createElement("textarea");
+      el.value = digitsOnly;
+      el.setAttribute("readonly", "");
+      el.style.position = "absolute";
+      el.style.left = "-9999px";
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand("copy");
+      document.body.removeChild(el);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    }
+  }
 
   const fetchAll = useCallback(async () => {
     if (!queryPhone) return;
@@ -66,10 +91,35 @@ export default function StatusPage() {
     if (queryPhone) fetchAll();
   }, [queryPhone, fetchAll]);
 
-  // 진행중만 추리기
-  const activeOrders = ordersAll.filter((o) => ACTIVE_SET.has(o.status));
+  useEffect(() => {
+    // 전화번호 + 계좌정보 로드
+    getPublicStoreDetail()
+      .then((d) => {
+        setCallNumber((d.cancelPhoneNumber || "").trim());
+        setBankLine((d.bankAccount || "").trim());
+      })
+      .catch(() => {
+        setCallNumber("");
+        setBankLine("");
+      });
+  }, []);
 
-  // 로딩
+  // 활성 주문만 추리기
+  const activeOrders = useMemo(
+    () => ordersAll.filter((o) => ACTIVE_SET.has(o.status)),
+    [ordersAll]
+  );
+
+  // 기준 주문(가장 최근 진행중)
+  const base = activeOrders[0] || null;
+  const baseCustomer = base?.customer || {};
+
+  // 추가 주문(기준 외 진행중 주문들)
+  const extraActives = useMemo(
+    () => (base ? activeOrders.slice(1) : activeOrders),
+    [activeOrders, base]
+  );
+
   if (loading) {
     return (
       <Layout>
@@ -78,8 +128,7 @@ export default function StatusPage() {
     );
   }
 
-  // 진행중 주문이 하나도 없으면 안내
-  if (!queryPhone || activeOrders.length === 0) {
+  if (!queryPhone || !base) {
     return (
       <Layout>
         <h1 className="text-xl font-bold text-center my-4">주문 현황</h1>
@@ -106,15 +155,11 @@ export default function StatusPage() {
     );
   }
 
-  // 공통 표시용(가장 최근 진행중 주문)
-  const base = activeOrders[0];
-  const baseCustomer = base.customer || {};
-
   return (
     <Layout>
       <h1 className="text-xl font-bold text-center my-4">주문 현황</h1>
 
-      {/* 주문자 (진행중 주문이 있을 때만 노출) */}
+      {/* 주문자 */}
       <div className="bg-white p-4 rounded-xl shadow mb-4">
         <h2 className="font-bold mb-2">주문자</h2>
         <p>성명: {baseCustomer.name || "—"}</p>
@@ -122,50 +167,122 @@ export default function StatusPage() {
         <p>주소: {baseCustomer.address || "—"}</p>
       </div>
 
-      {/* 진행중 주문 목록 */}
-      <div className="space-y-3 mb-4">
-        {activeOrders.map((o) => {
-          const statusText = ORDER_STATUS_LABELS[o.status] ?? o.status;
-          const statusClass = ORDER_STATUS_COLOR[o.status] ?? "text-black";
-          return (
-            <div key={o.orderId ?? o.orderDateMs} className="bg-white rounded-xl shadow p-4">
-              <div className="flex justify-between mb-2">
-                <div className="text-sm text-gray-500">{fmtTime(o.orderDate)}</div>
-              </div>
+      {/* 기준 주문 내역 */}
+      <div className="bg-white p-4 rounded-xl shadow mb-4">
+        <h2 className="font-bold mb-2">주문 내역</h2>
+        {Array.isArray(base.items) && base.items.length > 0 ? (
+          <>
+            <ul>
+              {base.items.map((it, i) => (
+                <li key={i}>
+                  {it.name} x {it.quantity}개
+                </li>
+              ))}
+            </ul>
+            {typeof base.totalPrice === "number" && base.totalPrice > 0 && (
+              <p className="font-bold mt-2">
+                총 금액: {base.totalPrice.toLocaleString("ko-KR")}원
+              </p>
+            )}
+            {base.orderDate && (
+              <p className="text-xs text-gray-500 mt-1">주문시간: {fmtTime(base.orderDate)}</p>
+            )}
+          </>
+        ) : (
+          <p>주문 내역이 없습니다.</p>
+        )}
+      </div>
 
-              <div className="text-sm mb-2">
-                <span className={`${statusClass} font-bold`}>{statusText}</span>
-                {" "}
-                <span className="text-gray-600 ml-1">
-                  {o.totalPrice ? `· 총 ${o.totalPrice.toLocaleString("ko-KR")}원` : ""}
-                </span>
-              </div>
+      {/* 추가 주문 내역: 기준 주문 바로 아래 */}
+      {extraActives.length > 0 && (
+        <div className="bg-white p-4 rounded-xl shadow mb-4">
+          <h2 className="font-bold mb-2">추가 주문 내역</h2>
+          <ul className="space-y-3">
+            {extraActives.map((o, idx) => (
+              <li key={`${o.orderId}-${idx}`} className="rounded-lg">
+                {/* 주문번호/상태/테두리 X, 구성은 기준 주문과 동일 */}
+                <div className="mb-1">
+                  {o.items.map((it, i2) => (
+                    <div key={i2}>
+                      {it.name} x {it.quantity}개
+                    </div>
+                  ))}
+                </div>
 
-              <div className="text-sm">
-                {o.items?.length ? (
-                  <ul className="list-disc pl-5">
-                    {o.items.map((it, i) => (
-                      <li key={i}>
-                        {it.name} x {it.quantity}개
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p>주문내역이 없습니다.</p>
+                {typeof o.totalPrice === "number" && o.totalPrice > 0 && (
+                  <div className="font-bold">
+                    추가 금액: {o.totalPrice.toLocaleString("ko-KR")}원
+                  </div>
                 )}
-              </div>
+
+                {o.orderDate && (
+                  <p className="text-xs text-gray-500 mt-1">주문시간: {fmtTime(o.orderDate)}</p>
+                )}
+              </li>
+            ))}
+          </ul>
+
+          <p className="text-xs text-gray-500 mt-2">
+            추가 주문은 기준 주문과 함께 조리·배달됩니다.
+          </p>
+        </div>
+      )}
+
+      {/* 현재 상태 + 안내문 + 전화 + 계좌복사 */}
+      <div className="bg-white p-6 rounded-xl shadow text-center mb-4">
+        <h2 className="font-bold mb-2">현재 상태</h2>
+        <p className={`${ORDER_STATUS_COLOR[base.status] ?? "text-black"} font-bold`}>
+          {ORDER_STATUS_LABELS[base.status] ?? base.status}
+        </p>
+
+        <div className="mt-3 text-xs text-gray-600 whitespace-pre-line">
+{`주문내역 확인 시, 아직 송금 전이라면 주문이 거절될 수 있어요.
+주문 및 결제 후 취소는 전화로만 가능합니다.`}
+        </div>
+
+        {/* 가게 전화 (항상 노출) */}
+        <a
+          href={`tel:${(callNumber || "01030332199").replace(/\D/g, "")}`}
+          className="mt-3 w-full bg-yellow-400 text-black font-bold py-3 rounded-xl inline-block"
+        >
+          추가주문/취소요청/문의 ({callNumber || "010-3033-2199"})
+        </a>
+
+        {/* 결제 계좌 + 복사 버튼 (bankAccount 있을 때만 노출) */}
+        {bankLine && (
+          <div className="mt-3">
+            <div className="flex items-center justify-center gap-2">
+              <p className="text-sm font-bold text-gray-800 select-all">
+                추가구매 시 결제: {bankLine}
+              </p>
+              <button
+                onClick={copyAccount}
+                className="bg-gray-200 hover:bg-gray-300 text-sm px-2 py-1 rounded active:scale-95"
+              >
+                복사
+              </button>
             </div>
-          );
-        })}
+            {copied && (
+              <p className="text-xs text-green-600 mt-1 text-center">
+                계좌번호가 복사됐어요
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
       {/* 액션 */}
       <div className="space-y-2">
-        <button className="w-full bg-yellow-400 text-black font-bold py-3 rounded-xl" onClick={fetchAll}>
+        <button
+          className="w-full bg-yellow-400 text-black font-bold py-3 rounded-xl"
+          onClick={fetchAll}
+        >
           새로고침
         </button>
         <Link href="/">
-          <button className="w-full bg-gray-300 text-black font-bold py-3 rounded-xl">메인으로</button>
+          <button className="w-full bg-gray-300 text-black font-bold py-3 rounded-xl">
+            메인으로
+          </button>
         </Link>
       </div>
     </Layout>
