@@ -42,7 +42,7 @@ export default function AdminLoginPage() {
 
         <input
           type="text"
-          placeholder="스토어 ID (예: 1)"
+          placeholder="스토어 ID"
           value={storeId}
           onChange={(e) => setStoreId(e.target.value)}
           className="w-full rounded-2xl bg-white px-4 py-3 border"

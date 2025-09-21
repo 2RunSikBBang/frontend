@@ -6,14 +6,17 @@ export default function AdminLayout({ children }) {
     <div className="min-h-screen bg-[#f9f1db] text-neutral-900 antialiased flex flex-col items-center">
       {/* 헤더 */}
       <header className="w-full bg-[#f5c16c] p-4 text-center font-bold text-lg flex items-center justify-center relative">
-        <Image
-  src="/logo.png"
-  alt="ThisWay Bread"
-  width={128}  // 실제 렌더링 크기에 맞춰 지정
-  height={32}
-  className="h-8 w-auto"
-/>
-        이런식빵
+        <div className="flex items-center gap-2">
+  <Image
+    src="/logo.png"
+    alt="ThisWay Bread"
+    width={128}
+    height={32}
+    className="h-8 w-auto"
+  />
+  <span className="font-bold text-lg">이런식빵</span>
+</div>
+
         <span className="ml-2 text-sm text-red-600">관리자용</span>
         <span className="absolute right-4 text-xs">개발: 윤준석, 김유미 | 기획: 송치호</span>
       </header>

@@ -5,6 +5,7 @@ import { useRouter } from "next/router";
 import Layout from "../components/Layout";
 import { getOrdersByPhone, getPublicStoreDetail } from "../services/guestApi";
 
+// 진행중 상태만 노출
 const ORDER_STATUS_LABELS = {
   PENDING: "주문을 확인하고 있습니다",
   PREPARING: "조리중입니다 🍞",
@@ -15,9 +16,9 @@ const ORDER_STATUS_COLOR = {
   PREPARING: "text-yellow-600",
   DELIVERING: "text-green-600",
 };
-
 const ACTIVE_SET = new Set(["PENDING", "PREPARING", "DELIVERING"]);
 
+// ───────────── 유틸 ─────────────
 function fmtPhone(v) {
   const d = String(v || "").replace(/\D/g, "");
   if (d.length === 11 && d.startsWith("010")) return `010-${d.slice(3, 7)}-${d.slice(7)}`;
@@ -38,6 +39,23 @@ function fmtTime(iso) {
     return "-";
   }
 }
+function digits(s) {
+  return String(s || "").replace(/\D/g, "");
+}
+function dateKey(iso) {
+  const d = new Date(iso);
+  if (isNaN(d)) return "";
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const da = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${da}`; // 로컬 타임존 기준 날짜 키
+}
+/** 주소에서 건물명 추출: 첫 공백 전 토큰을 건물로 간주 */
+function pickBuilding(address) {
+  const s = String(address || "").trim();
+  if (!s) return "";
+  return s.split(/\s+/)[0];
+}
 
 export default function StatusPage() {
   const router = useRouter();
@@ -45,11 +63,12 @@ export default function StatusPage() {
 
   const [ordersAll, setOrdersAll] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [callNumber, setCallNumber] = useState("");
 
-  // ✅ 추가: 계좌 안내 + 복사 상태/유틸
+  // 가게 연락처/계좌
+  const [callNumber, setCallNumber] = useState("");
   const [bankLine, setBankLine] = useState("");
   const [copied, setCopied] = useState(false);
+
   function extractAccountDigits(line) {
     return String(line || "").replace(/\D/g, "");
   }
@@ -92,7 +111,6 @@ export default function StatusPage() {
   }, [queryPhone, fetchAll]);
 
   useEffect(() => {
-    // 전화번호 + 계좌정보 로드
     getPublicStoreDetail()
       .then((d) => {
         setCallNumber((d.cancelPhoneNumber || "").trim());
@@ -104,7 +122,7 @@ export default function StatusPage() {
       });
   }, []);
 
-  // 활성 주문만 추리기
+  // 진행중만 필터
   const activeOrders = useMemo(
     () => ordersAll.filter((o) => ACTIVE_SET.has(o.status)),
     [ordersAll]
@@ -114,12 +132,31 @@ export default function StatusPage() {
   const base = activeOrders[0] || null;
   const baseCustomer = base?.customer || {};
 
-  // 추가 주문(기준 외 진행중 주문들)
-  const extraActives = useMemo(
-    () => (base ? activeOrders.slice(1) : activeOrders),
-    [activeOrders, base]
-  );
+  // 추가 주문(기준 외 진행중) — 같은 이름+전화+날짜(로컬)+건물만
+  const extraActives = useMemo(() => {
+    if (!base) return [];
+    const baseName = (baseCustomer.name || "").trim();
+    const basePhone = digits(baseCustomer.phone || queryPhone);
+    const baseDate = dateKey(base.orderDate);
+    const baseBuilding = pickBuilding(baseCustomer.address);
 
+    return activeOrders.filter((o) => {
+      if (o === base) return false;
+      const oc = o.customer || {};
+      const oName = (oc.name || "").trim();
+      const oPhone = digits(oc.phone);
+      const oDate = dateKey(o.orderDate);
+      const oBuilding = pickBuilding(oc.address);
+      return (
+        oName === baseName &&
+        oPhone === basePhone &&
+        oDate === baseDate &&
+        oBuilding === baseBuilding
+      );
+    });
+  }, [activeOrders, base, baseCustomer?.name, baseCustomer?.phone, baseCustomer?.address, queryPhone]);
+
+  // 로딩
   if (loading) {
     return (
       <Layout>
@@ -128,6 +165,7 @@ export default function StatusPage() {
     );
   }
 
+  // 진행중이 없으면 안내
   if (!queryPhone || !base) {
     return (
       <Layout>
@@ -155,6 +193,9 @@ export default function StatusPage() {
     );
   }
 
+  // 주문번호 표시용
+  const baseOrderId = base.orderId ?? base.id ?? null;
+
   return (
     <Layout>
       <h1 className="text-xl font-bold text-center my-4">주문 현황</h1>
@@ -167,9 +208,15 @@ export default function StatusPage() {
         <p>주소: {baseCustomer.address || "—"}</p>
       </div>
 
-      {/* 기준 주문 내역 */}
+      {/* 기준 주문 내역 (+ 주문번호 표시) */}
       <div className="bg-white p-4 rounded-xl shadow mb-4">
-        <h2 className="font-bold mb-2">주문 내역</h2>
+        <h2 className="font-bold mb-3">주문 내역</h2>
+        {baseOrderId && (
+          <p className="text-xs text-gray-500">주문번호: <b>#{baseOrderId}</b></p>
+        )}
+        {base.orderDate && (
+              <p className="text-xs text-gray-500 mb-1">주문시간: {fmtTime(base.orderDate)}</p>
+            )}
         {Array.isArray(base.items) && base.items.length > 0 ? (
           <>
             <ul>
@@ -180,12 +227,9 @@ export default function StatusPage() {
               ))}
             </ul>
             {typeof base.totalPrice === "number" && base.totalPrice > 0 && (
-              <p className="font-bold mt-2">
+              <p className="font-bold mt-1">
                 총 금액: {base.totalPrice.toLocaleString("ko-KR")}원
               </p>
-            )}
-            {base.orderDate && (
-              <p className="text-xs text-gray-500 mt-1">주문시간: {fmtTime(base.orderDate)}</p>
             )}
           </>
         ) : (
@@ -193,35 +237,34 @@ export default function StatusPage() {
         )}
       </div>
 
-      {/* 추가 주문 내역: 기준 주문 바로 아래 */}
+      {/* 추가 주문 내역 (기준과 묶임) */}
       {extraActives.length > 0 && (
         <div className="bg-white p-4 rounded-xl shadow mb-4">
-          <h2 className="font-bold mb-2">추가 주문 내역</h2>
+          <h2 className="font-bold mb-3">추가 주문 내역</h2>
           <ul className="space-y-3">
             {extraActives.map((o, idx) => (
-              <li key={`${o.orderId}-${idx}`} className="rounded-lg">
-                {/* 주문번호/상태/테두리 X, 구성은 기준 주문과 동일 */}
-                <div className="mb-1">
-                  {o.items.map((it, i2) => (
+              <li key={`${o.orderId ?? o.id ?? idx}`} className="rounded-lg">
+                <div className="text-xs text-gray-500">
+                  주문번호: <b>#{o.orderId ?? o.id ?? "—"}</b>
+                </div>
+                {o.orderDate && (
+                  <p className="text-xs text-gray-500">주문시간: {fmtTime(o.orderDate)}</p>
+                )}
+                <div className="mt-1 mb-1">
+                  {Array.isArray(o.items) && o.items.map((it, i2) => (
                     <div key={i2}>
                       {it.name} x {it.quantity}개
                     </div>
                   ))}
                 </div>
-
                 {typeof o.totalPrice === "number" && o.totalPrice > 0 && (
                   <div className="font-bold">
                     추가 금액: {o.totalPrice.toLocaleString("ko-KR")}원
                   </div>
                 )}
-
-                {o.orderDate && (
-                  <p className="text-xs text-gray-500 mt-1">주문시간: {fmtTime(o.orderDate)}</p>
-                )}
               </li>
             ))}
           </ul>
-
           <p className="text-xs text-gray-500 mt-2">
             추가 주문은 기준 주문과 함께 조리·배달됩니다.
           </p>
@@ -240,7 +283,7 @@ export default function StatusPage() {
 주문 및 결제 후 취소는 전화로만 가능합니다.`}
         </div>
 
-        {/* 가게 전화 (항상 노출) */}
+        {/* 가게 전화 */}
         <a
           href={`tel:${(callNumber || "01030332199").replace(/\D/g, "")}`}
           className="mt-3 w-full bg-yellow-400 text-black font-bold py-3 rounded-xl inline-block"
@@ -248,12 +291,12 @@ export default function StatusPage() {
           추가주문/취소요청/문의 ({callNumber || "010-3033-2199"})
         </a>
 
-        {/* 결제 계좌 + 복사 버튼 (bankAccount 있을 때만 노출) */}
+        {/* 결제 계좌 + 복사 버튼 */}
         {bankLine && (
           <div className="mt-3">
             <div className="flex items-center justify-center gap-2">
               <p className="text-sm font-bold text-gray-800 select-all">
-                추가구매 시 결제: {bankLine}
+                추가주문 시 결제: {bankLine}
               </p>
               <button
                 onClick={copyAccount}

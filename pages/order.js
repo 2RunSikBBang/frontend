@@ -1,5 +1,5 @@
 // pages/order.js
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/router";
 import { getMenus, getStoreInfo } from "../services/guestApi";
 import useOrderStore from "../store/orderStore";
@@ -20,8 +20,39 @@ export default function OrderPage() {
   const [quantities, setQuantities] = useState({}); // { [menuId]: number }
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [address, setAddress] = useState("");
+  const [building, setBuilding] = useState("");     // 공과대학/백록관/국지원 등
+  const [detailAddr, setDetailAddr] = useState(""); // 자유 입력(고정 빌딩이면 무시)
   const [consent, setConsent] = useState(false);
+
+  // ─────────────────────────────────────────────────────────────
+  // 배달 가능 지역 & 건물별 상세주소 고정 문구
+  // - 기숙사(국지원/난지원/다산관/예지원/율곡관/퇴계관/새롬관 남/여) = 1층 수령 고정
+  // - 이룸관 = 2층 수령 고정
+  const BUILDING_OPTIONS = [
+    "공과대학", "법학전문대학", "사회과학대학", "인문대학",
+    "백록관", "서암관", "석재", "한울관", "60주년기념관",
+    "국지원", "난지원", "다산관", "새롬관(남)", "새롬관(여)",
+    "예지원", "율곡관", "이룸관", "퇴계관"
+  ];
+
+  const FIXED_DETAIL_BY_BUILDING = {
+    "국지원": "1층에서 수령 바랍니다 (도착 전 전화 예정)",
+    "난지원": "1층에서 수령 바랍니다 (도착 전 전화 예정)",
+    "다산관": "1층에서 수령 바랍니다 (도착 전 전화 예정)",
+    "예지원": "1층에서 수령 바랍니다 (도착 전 전화 예정)",
+    "율곡관": "1층에서 수령 바랍니다 (도착 전 전화 예정)",
+    "퇴계관": "1층에서 수령 바랍니다 (도착 전 전화 예정)",
+    "새롬관(남)": "1층 CU 앞에서 수령 바랍니다 (도착 전 전화 예정)",
+    "새롬관(여)": "1층에서 수령 바랍니다 (도착 전 전화 예정)",
+    "이룸관": "2층에서 수령 바랍니다 (도착 전 전화 예정)",
+  };
+
+  const isFixedDetail = Boolean(FIXED_DETAIL_BY_BUILDING[building]);
+  const displayDetail = isFixedDetail
+    ? FIXED_DETAIL_BY_BUILDING[building]
+    : detailAddr;
+  // ─────────────────────────────────────────────────────────────
+
 
   // 메뉴 목록 불러오기
   useEffect(() => {
@@ -60,10 +91,14 @@ export default function OrderPage() {
     });
   };
 
-  // 총 금액
-  const totalPrice = menuList.reduce(
-    (sum, menu) => sum + menu.price * (quantities[menu.id] || 0),
-    0
+  // 총 금액 / 총 수량
+  const totalPrice = useMemo(
+    () => menuList.reduce((sum, m) => sum + m.price * (quantities[m.id] || 0), 0),
+    [menuList, quantities]
+  );
+  const totalQty = useMemo(
+    () => menuList.reduce((sum, m) => sum + (quantities[m.id] || 0), 0),
+    [menuList, quantities]
   );
 
   // 전화번호 입력 포맷
@@ -78,9 +113,12 @@ export default function OrderPage() {
     .map((menu) => ({ ...menu, quantity: quantities[menu.id] }));
 
   // 결제 진입 가능 여부
-  const canProceed = hasActiveOrderStrict({ name, phone, address }, selectedItems);
+  const canProceed = hasActiveOrderStrict(
+    { name, phone, address: [building, displayDetail].filter(Boolean).join(" ") },
+    selectedItems
+  );
 
-  // 주문 접수(서버 호출 X): 최신 상태 가드 → 로컬 저장 → /payment로 이동
+  // 주문 접수(서버 호출 X): 최신 상태 가드 → 유효성 체크 → 로컬 저장 → /payment 이동
   const handleOrderSubmit = async () => {
     // 최신 상태 재확인
     try {
@@ -99,17 +137,35 @@ export default function OrderPage() {
       return;
     }
 
+    // 수량 2개 이상 필수
+    if (totalQty < 2) {
+      alert("배달은 2개 이상부터 가능해요");
+      return;
+    }
+
+    // 지역/상세주소 검증
+    if (!building) {
+      alert("배달 지역을 선택해 주세요.");
+      return;
+    }
+    if (!isFixedDetail && displayDetail.trim().length === 0) {
+      alert("상세 주소를 입력해 주세요.");
+      return;
+    }
+
     if (!consent) {
       alert("개인정보 수집·이용에 동의해 주세요.");
       return;
     }
     if (!canProceed) {
-      alert("입력값을 확인해주세요.\n- 메뉴 선택\n- 이름\n- 전화번호(010-1234-1234)\n- 주소를 모두 입력해야 해요.");
+      alert("입력값을 확인해주세요.\n- 메뉴 선택(2개 이상)\n- 이름\n- 전화번호(010-1234-1234)\n- 배달 지역/상세주소");
       return;
     }
 
+    // 로컬 저장
+    const fullAddress = [building, displayDetail].filter(Boolean).join(" ");
     setItems(selectedItems);
-    setCustomer({ name, phone, address });
+    setCustomer({ name, phone, address: fullAddress });
 
     router.push("/payment");
   };
@@ -121,58 +177,55 @@ export default function OrderPage() {
       {/* 메뉴 선택 */}
       <div className="bg-white p-4 rounded-xl shadow mb-4">
         <h2 className="font-bold mb-2">
-          1. 메뉴 선택{" "}
-          <span className="text-red-500 text-sm">(개당 3,900원)</span>
+          1. 메뉴 선택 - {" "}
+          <span className="text-blue-500 text-base"> 개당 3,900원</span>
         </h2>
 
         {loading && <p className="text-sm text-gray-500">메뉴를 불러오는 중...</p>}
         {error && <p className="text-sm text-red-600">{error}</p>}
 
-        {!loading &&
-          !error &&
-          menuList.map((menu) => {
-            const qty = Number(quantities[menu.id] || 0);
-            const minQ = Number.isFinite(menu?.minOrderQuantity) ? Number(menu.minOrderQuantity) : 0;
-            const maxQ = Number.isFinite(menu?.maxOrderQuantity) ? Number(menu.maxOrderQuantity) : Infinity;
-            const atMin = qty <= minQ;
-            const atMax = qty >= maxQ;
+        {!loading && !error && menuList.map((menu) => {
+          const qty = Number(quantities[menu.id] || 0);
+          const minQ = Number.isFinite(menu?.minOrderQuantity) ? Number(menu.minOrderQuantity) : 0;
+          const maxQ = Number.isFinite(menu?.maxOrderQuantity) ? Number(menu.maxOrderQuantity) : Infinity;
+          const atMin = qty <= minQ;
+          const atMax = qty >= maxQ;
 
-            return (
-              <div key={menu.id} className="flex justify-between items-center mb-2">
-                <div className="flex flex-col">
-                  <span>{menu.name}</span>
-                  {Number.isFinite(maxQ) && (
-                    <span className="text-xs text-gray-500">최대 {maxQ}개까지 선택 가능</span>
-                  )}
-                  {minQ > 0 && (
-                    <span className="text-xs text-gray-500">최소 {minQ}개부터 주문 가능</span>
-                  )}
-                </div>
-                <div className="flex items-center space-x-2">
-                  <button
-                    className={`px-2 py-1 rounded ${atMin ? "bg-gray-200 text-gray-500 cursor-not-allowed" : "bg-red-300"}`}
-                    onClick={() => handleQuantity(menu.id, -1)}
-                    disabled={atMin}
-                    title={atMin ? `최소 ${minQ}개` : "수량 줄이기"}
-                  >
-                    -
-                  </button>
-                  <span>{qty}</span>
-                  <button
-                    className={`px-2 py-1 rounded ${atMax ? "bg-gray-200 text-gray-500 cursor-not-allowed" : "bg-blue-300"}`}
-                    onClick={() => handleQuantity(menu.id, +1)}
-                    disabled={atMax}
-                    title={atMax ? `최대 ${maxQ}개` : "수량 늘리기"}
-                  >
-                    +
-                  </button>
-                </div>
+          return (
+            <div key={menu.id} className="flex justify-between items-center mb-2">
+              <div className="flex flex-col">
+                <span>{menu.name}</span>
+                {/* 최대 N개 안내 문구는 숨김(요청사항) */}
+                {minQ > 0 && (
+                  <span className="text-xs text-gray-500">최소 {minQ}개부터 배달 가능</span>
+                )}
               </div>
-            );
-          })}
+              <div className="flex items-center space-x-2">
+                <button
+                  className={`px-2 py-1 rounded ${atMin ? "bg-gray-200 text-gray-500 cursor-not-allowed" : "bg-red-300"}`}
+                  onClick={() => handleQuantity(menu.id, -1)}
+                  disabled={atMin}
+                  title={atMin ? `최소 ${minQ}개` : "수량 줄이기"}
+                >
+                  -
+                </button>
+                <span>{qty}</span>
+                <button
+                  className={`px-2 py-1 rounded ${atMax ? "bg-gray-200 text-gray-500 cursor-not-allowed" : "bg-blue-300"}`}
+                  onClick={() => handleQuantity(menu.id, +1)}
+                  disabled={atMax}
+                  title={atMax ? "최대 수량에 도달" : "수량 늘리기"}
+                >
+                  +
+                </button>
+              </div>
+            </div>
+          );
+        })}
         <p className="font-bold mt-2">
           총 주문금액: {totalPrice.toLocaleString("ko-KR")}원
         </p>
+        <p className="text-xs text-gray-500 mt-1">현재 선택 수량: {totalQty}개 (2개 이상부터 주문 가능)</p>
       </div>
 
       {/* 주문자 정보 입력 */}
@@ -192,20 +245,47 @@ export default function OrderPage() {
           value={phone}
           onChange={handlePhoneChange}
           maxLength={13}
-          className="w-full border rounded p-2 mb-1"
+          className="w-full border rounded p-2 mb-2"
         />
         {!isValidPhone(phone) && phone.length > 0 && (
           <p className="text-xs text-blue-500 mb-2">전화번호는 010-1234-1234 형식이어야 해요.</p>
         )}
+
+        {/* 배달 지역 선택 */}
+        <label className="block font-bold mt-2 mb-1">배달 지역</label>
+        <select
+          className="w-full border rounded p-2 mb-2 bg-white"
+          value={building}
+          onChange={(e) => setBuilding(e.target.value)}
+        >
+          <option value="">건물을 선택하세요</option>
+          {BUILDING_OPTIONS.map((b) => (
+            <option key={b} value={b}>{b}</option>
+          ))}
+        </select>
+
+        {/* 상세 주소(고정/자유) */}
+        <label className="block font-bold mb-1">상세 주소</label>
         <textarea
-          placeholder="배송 받으실 주소 (OO관 OO호 형식으로 자세히 작성해주세요!)"
-          value={address}
-          onChange={(e) => setAddress(e.target.value)}
-          className="w-full border rounded p-2 mb-2"
+          placeholder={isFixedDetail ? "" : "예) 2호관 3층 301호, 1층 중앙로비 앞 등 수령 위치"}
+          value={displayDetail}
+          onChange={(e) => {
+            if (!isFixedDetail) setDetailAddr(e.target.value);
+          }}
+          readOnly={isFixedDetail}
+          className={`w-full border rounded p-2 mb-2 ${isFixedDetail ? "bg-gray-100 text-gray-700" : ""}`}
         />
-        {address.length > 0 && (
-          <p className="text-xs text-blue-500 mb-2">배달은 강원대학교 춘천캠퍼스 내에서만 가능해요.</p>
+        {building && (
+          <p className="text-xs text-gray-500 mt-1">
+            선택한 지역: <b>{building}</b>
+            {isFixedDetail
+              ? ` · 이 건물은 ${
+                  /2층/.test(FIXED_DETAIL_BY_BUILDING[building]) ? "2층" : "1층"
+            } 수령만 가능합니다(수정 불가).`
+              : " · 수령 위치/호수 등을 자세히 적어주세요."}
+          </p>
         )}
+
       </div>
 
       {/* 개인정보 수집·이용 동의 (필수) */}
@@ -247,7 +327,7 @@ export default function OrderPage() {
       <button
         className="w-full bg-yellow-400 text-black font-bold py-3 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
         onClick={handleOrderSubmit}
-        disabled={!consent || !canProceed || loading || error}
+        disabled={!consent || !canProceed || totalQty < 2 || loading || error}
       >
         주문 접수하기
       </button>

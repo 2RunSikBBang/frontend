@@ -3,6 +3,7 @@ import { useEffect, useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/router";
 import Layout from "../components/Layout";
 import { getStoreInfo } from "../services/guestApi";
+import Image from "next/image";
 
 export default function Home() {
   const router = useRouter();
@@ -126,7 +127,7 @@ export default function Home() {
           }`}
           title={orderDisabled ? "현재 주문이 불가능합니다" : "배달 주문하기"}
         >
-          🚴 배달 주문하기
+          🚶💨 배달 주문하기
         </button>
 
         <button
@@ -137,62 +138,29 @@ export default function Home() {
         </button>
 
 {/* --- 현장구매 특전: 공지 카드 --- */}
-{/* --- 현장구매 특전: 공지 카드 (수정판) --- */}
-{/* --- 현장구매 특전: 공지 카드 (수정판) --- */}
-<section
-  aria-label="현장구매 특전 공지"
-  className="relative overflow-hidden mt-4 rounded-2xl p-5
-             bg-gradient-to-br from-purple-100 via-violet-100 to-fuchsia-100
-             shadow-lg shadow-purple-300/40 border border-white/60"
->
-  {/* 데코: 은은한 반짝이 */}
-  <div className="pointer-events-none absolute inset-0 opacity-50">
-    <div className="absolute -top-6 -left-6 h-24 w-24 rounded-full blur-2xl bg-purple-200/60" />
-    <div className="absolute -bottom-8 -right-8 h-28 w-28 rounded-full blur-3xl bg-fuchsia-200/60" />
-  </div>
+<section className="mt-4 rounded-2xl p-5 bg-gradient-to-br from-purple-200 via-fuchsia-200 to-pink-200 text-center shadow-lg border border-purple-300">
+  <h3 className="text-2xl font-extrabold text-purple-900 flex items-center justify-center gap-2">
+    ✨ 현장구매 특전 ✨
+  </h3>
+  <h3 className="mt-3 text-lg font-bold text-purple-900">
+     🍀 매장에서만 만나는 <span className="underline decoration-purple-300">뽑기이벤트</span> 🍀
+  </h3>
+  <p className="mt-2 text-[14px] leading-5 text-purple-800">
+    한정 티셔츠, 식빵이 타투 스티커 등<br /> 여러가지 <span className="font-semibold">특별상품</span>을
+    <br className="sm:hidden" /> 노리고 싶다면!
+  </p>
+  <p className="mt-2 text-[10px] leading-5 text-purple-800 font-bold">
+    🎁 뽑기권 최대 3장 획득 가능!
+  </p>
 
-  <div className="relative text-center">
-    {/* 상단 배지 */}
-    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full
-                    bg-white/80 backdrop-blur border border-purple-200 shadow-sm">
-      <span className="text-[21px] font-extrabold text-purple-700">✨ 현장구매 특전 ✨</span>
-    </div>
-
-    {/* 섹션 1: 뽑기이벤트 */}
-    <h3 className="mt-3 text-xl font-bold text-purple-900">
-      매장에서만 만나는 <span className="underline decoration-purple-300">뽑기이벤트</span> 🧚‍♀️
-    </h3>
-    <p className="mt-2 text-[13px] leading-5 text-purple-800">
-      한정 티셔츠, 식빵이 타투 스티커 등<br /> 여러가지 <span className="font-semibold">특별상품</span>을
-      <br className="sm:hidden" /> 노리고 싶다면!
-    </p>
-
-    {/* 섹션 2: 마늘빵 */}
-    <h3 className="mt-4 text-xl font-bold text-purple-900">
-      매장에서만 만나는 <span className="underline decoration-purple-300">???</span> 🧚‍♀️
-    </h3>
-    <p className="mt-2 text-[13px] leading-5 text-purple-800">
-      기분좋은 <span className="font-semibold">???</span>을
-      <br className="sm:hidden" /> 느끼고 싶다면!
-    </p>
-
-    {/* 혜택 배지들 */}
-    <ul className="mt-4 flex flex-wrap items-center justify-center gap-2">
-      <li className="text-[11px] px-2.5 py-1 rounded-full bg-white/80 border border-purple-200 text-purple-700 font-semibold shadow-sm">
-        🎁 현장 구매 시 뽑기권 최대 3장
-      </li>
-      <li className="text-[11px] px-2.5 py-1 rounded-full bg-white/80 border border-purple-200 text-purple-700 font-semibold shadow-sm">
-        🎁 당일 구운 ???(당일 한정 수량)
-      </li>
-      <li className="text-[11px] px-2.5 py-1 rounded-full bg-white/80 border border-purple-200 text-purple-700 font-semibold shadow-sm">
-        🎁 부스 체험 스탬프 적립
-      </li>
-    </ul>
-
-    {/* 안내 문구 */}
-    <p className="mt-3 text-[12px] text-purple-700/80">
-      * 수량한정 혜택은 매장 상황에 따라 변동될 수 있어요.
-    </p>
+  <div className="flex justify-center mt-4">
+    <Image
+      src="/locate.jpg"
+      alt="ThisWay Bread locate"
+      width={952}
+      height={1045}
+      className="w-3/4 h-auto max-w-xs sm:max-w-sm md:max-w-md rounded-lg shadow"
+    />
   </div>
 </section>
 

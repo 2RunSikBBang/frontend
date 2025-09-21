@@ -10,13 +10,17 @@ export default function Layout({ children }) {
         <span className="absolute left-4 text-xs">개발: 윤준석, 김유미</span>
 
         {/* 가운데: 로고 + 이름 */}
-        <Image
-  src="/logo.png"
-  alt="ThisWay Bread"
-  width={128}  // 실제 렌더링 크기에 맞춰 지정
-  height={32}
-  className="h-8 w-auto"
-/>
+       <div className="flex items-center gap-2">
+  <Image
+    src="/logo.png"
+    alt="ThisWay Bread"
+    width={128}
+    height={32}
+    className="h-8 w-auto"
+  />
+  <span className="font-bold text-lg">이런식빵</span>
+</div>
+
 
         {/* 오른쪽: 기획 */}
         <span className="absolute right-4 text-xs">기획: 송치호</span>
