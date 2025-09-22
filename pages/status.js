@@ -66,7 +66,7 @@ function orderIdNum(id) {
 export default function StatusPage() {
   const router = useRouter();
 
-  // ✅ URL에 남기지 않을 안전한 phone 상태
+  // URL에 남기지 않을 안전한 phone 상태
   const [phone, setPhone] = useState("");
 
   const [ordersAll, setOrdersAll] = useState([]);
@@ -142,7 +142,7 @@ export default function StatusPage() {
     }
   }
 
-  // ✅ 서버 조회는 세션의 phone 으로만
+  // 서버 조회는 세션의 phone 으로만
   const fetchAll = useCallback(async () => {
     if (!phone) return;
     try {
@@ -223,7 +223,7 @@ export default function StatusPage() {
     );
   }
 
-  // 진행중이 없으면 안내 (✅ 조건도 queryPhone → phone 으로 교체)
+  // 진행중이 없으면 안내 ( 조건도 queryPhone → phone 으로 교체)
   if (!phone || !base) {
     return (
       <Layout>

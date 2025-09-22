@@ -7,7 +7,7 @@ import { hasActiveOrderStrict } from "../utils/validators";
 import { createGuestOrder } from "../services/guestApi";
 
 // 화면 표시용 라인
-const BANK_LINE = "토스뱅크 1002-1965-8689 김유미(모임통장)";
+const BANK_LINE = "토스뱅크 1002-1965-8689 김유미";
 
 // 복사용: 숫자만
 function extractAccountDigits(line) {
