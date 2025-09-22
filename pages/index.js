@@ -142,7 +142,7 @@ export default function Home() {
   <h3 className="text-2xl font-extrabold text-purple-900 flex items-center justify-center gap-2">
     ✨ 현장구매 특전 ✨
   </h3>
-  <h3 className="mt-3 text-base font-bold text-purple-900">
+  <h3 className="mt-3 text-[15px] font-bold text-purple-900">
      🍀 매장에서만 만나는 <span className="underline decoration-purple-300">뽑기이벤트</span> 🍀
   </h3>
   <p className="mt-2 text-[12px] leading-5 text-purple-800">
