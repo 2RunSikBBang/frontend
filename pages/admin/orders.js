@@ -9,6 +9,7 @@ import {
   updateStoreStatus,
   getStoreInfoForOperator,
   getCurrentStoreId,
+  deleteOrder, // ✅ 주문 삭제 API 사용
 } from "../../services/operatorApi";
 import { getAllStoreStatuses, getMenus, createGuestOrder } from "../../services/guestApi";
 
@@ -85,6 +86,10 @@ export default function AdminOrdersPage() {
 
   const [openOrderMenuId, setOpenOrderMenuId] = useState(null);
   const [savingOrderId, setSavingOrderId] = useState(null);
+
+  // ✅ 삭제 모드 토글 & 진행중 삭제 id
+  const [showDelete, setShowDelete] = useState(false);
+  const [deletingOrderId, setDeletingOrderId] = useState(null);
 
   const orderMenuContainerRefs = useRef({});
   const setOrderMenuContainerRef = useCallback((orderId, el) => {
@@ -224,41 +229,38 @@ export default function AdminOrdersPage() {
     };
   }, [fetchOrders, fetchStoreStatus, fetchOperatorInfo]);
 
-useEffect(() => {
-  function onClickOutside(e) {
-    // 상단 상태 드롭다운
-    if (menuRef.current && !menuRef.current.contains(e.target)) setOpenMenu(false);
+  useEffect(() => {
+    function onClickOutside(e) {
+      if (menuRef.current && !menuRef.current.contains(e.target)) setOpenMenu(false);
 
-    // 주문 상태 변경 메뉴
-    if (openOrderMenuId != null) {
-      const container = orderMenuContainerRefs.current[openOrderMenuId];
-      if (!container || !container.contains(e.target)) setOpenOrderMenuId(null);
+      if (openOrderMenuId != null) {
+        const container = orderMenuContainerRefs.current[openOrderMenuId];
+        if (!container || !container.contains(e.target)) setOpenOrderMenuId(null);
+      }
+
+      if (addOpenFor != null) {
+        const panel = document.getElementById(`phone-extra-panel-${addOpenFor}`);
+        if (panel && !panel.contains(e.target)) {
+          setAddOpenFor(null);
+        }
+      }
     }
 
-    // 전화 추가주문 패널: 현재 열린 주문(addOpenFor)의 패널만 체크
-    if (addOpenFor != null) {
-      const panel = document.getElementById(`phone-extra-panel-${addOpenFor}`);
-      if (panel && !panel.contains(e.target)) {
+    function onKey(e) {
+      if (e.key === "Escape") {
+        setOpenMenu(false);
+        setOpenOrderMenuId(null);
         setAddOpenFor(null);
       }
     }
-  }
 
-  function onKey(e) {
-    if (e.key === "Escape") {
-      setOpenMenu(false);
-      setOpenOrderMenuId(null);
-      setAddOpenFor(null);
-    }
-  }
-
-  document.addEventListener("click", onClickOutside);
-  document.addEventListener("keydown", onKey);
-  return () => {
-    document.removeEventListener("click", onClickOutside);
-    document.removeEventListener("keydown", onKey);
-  };
-}, [openOrderMenuId, addOpenFor]);
+    document.addEventListener("click", onClickOutside);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("click", onClickOutside);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [openOrderMenuId, addOpenFor]);
 
   const handleSelectOrderStatus = async (orderId, nextStatus) => {
     try {
@@ -299,6 +301,22 @@ useEffect(() => {
     } catch (err) {
       setStoreStatus(prev);
       alert(err?.message || "가게 상태 변경 실패");
+    }
+  };
+
+  // ✅ 삭제 처리
+  const confirmAndDelete = async (orderId) => {
+    if (!showDelete) return; // 안전망
+    const ok = window.confirm(`주문 #${orderId} 내역을 삭제하시겠습니까?\n삭제 후에는 복구할 수 없습니다.`);
+    if (!ok) return;
+    try {
+      setDeletingOrderId(orderId);
+      await deleteOrder(orderId);
+      await fetchOrders();
+    } catch (e) {
+      alert(e?.message || "주문 삭제에 실패했습니다.");
+    } finally {
+      setDeletingOrderId(null);
     }
   };
 
@@ -344,6 +362,17 @@ useEffect(() => {
             )}
           </div>
 
+          {/* ✅ 삭제 모드 토글 (새로고침 버튼 왼쪽/같은 줄) */}
+          <button
+            onClick={() => setShowDelete((v) => !v)}
+            className={`rounded-xl px-3 py-2 text-sm font-bold ${
+              showDelete ? "bg-red-200 hover:bg-red-300" : "bg-gray-200 hover:bg-gray-300"
+            }`}
+            title="삭제 모드 토글"
+          >
+            {showDelete ? "삭제ON" : "삭제OFF"}
+          </button>
+
           <button
             onClick={fetchOrders}
             className="rounded-xl bg-[#f5c16c] px-3 py-2 text-sm font-bold hover:bg-[#e0aa45]"
@@ -370,17 +399,44 @@ useEffect(() => {
 
           return (
             <div key={orderId} className="bg-white rounded-xl shadow p-4">
-              <div className="flex justify-between mb-2">
+              {/* 헤더 줄: 주문번호 / 시간 / (옵션) 삭제 X */}
+              <div className="flex justify-between items-start mb-2">
                 <div className="font-bold">#{orderId}</div>
-                <div className="text-sm text-gray-500">{fmtTime(o.orderDate)}</div>
+
+                <div className="flex items-center gap-2">
+                  <div className="text-sm text-gray-500">{fmtTime(o.orderDate)}</div>
+
+                  {/* ✅ 삭제 모드일 때만 X버튼 노출 */}
+                  {showDelete && (
+                    <button
+                      type="button"
+                      aria-label="주문 삭제"
+                      title="주문 삭제"
+                      className={`px-2 py-1 rounded text-sm border ${
+                        deletingOrderId === orderId
+                          ? "bg-red-100 text-red-400 cursor-not-allowed"
+                          : "bg-red-50 text-red-600 hover:bg-red-100"
+                      }`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (deletingOrderId !== orderId) confirmAndDelete(orderId);
+                      }}
+                      disabled={deletingOrderId === orderId}
+                    >
+                      {deletingOrderId === orderId ? "삭제중…" : "×"}
+                    </button>
+                  )}
+                </div>
               </div>
 
+              {/* 주문자 / 주소 */}
               <div className="text-sm">
                 <div>이름: {o.customer.name || "-"}</div>
                 <div>전화: {o.customer.phone || "-"}</div>
                 <div>주소: {o.customer.address || "-"}</div>
               </div>
 
+              {/* 아이템 */}
               <ul className="text-sm list-disc pl-5 my-2">
                 {o.items.map((it, i2) => (
                   <li key={i2}>
@@ -389,8 +445,8 @@ useEffect(() => {
                 ))}
               </ul>
 
+              {/* 상태/금액 + 우측 버튼들 */}
               <div className="flex justify-between items-start mt-2 gap-3">
-                {/* 왼쪽: 상태/결제 1줄 + 금액 1줄 */}
                 <div className="text-sm flex-1">
                   <div>
                     상태:{" "}
@@ -409,21 +465,20 @@ useEffect(() => {
                   )}
                 </div>
 
-                {/* 오른쪽: 버튼 영역 (전화 추가주문 → 왼쪽, 상태변경 → 오른쪽) */}
                 <div className="flex items-start gap-2">
                   {/* 전화 추가주문 버튼 */}
-                <button
-                  type="button"
-                  className="bg-amber-200 px-3 py-1 rounded hover:bg-amber-300"
-                  onClick={(e) => {
-                    e.stopPropagation();            // ← 문서 밖 클릭 핸들러로 전파 차단
-                    openPhoneExtra(orderId);
-                  }}
-                >
+                  <button
+                    type="button"
+                    className="bg-amber-200 px-3 py-1 rounded hover:bg-amber-300"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openPhoneExtra(orderId);
+                    }}
+                  >
                     추가주문
                   </button>
 
-                  {/* 상태 변경 버튼 */}
+                  {/* 상태 변경 버튼/메뉴 */}
                   <div className="relative" ref={(el) => setOrderMenuContainerRef(orderId, el)}>
                     <button
                       className="bg-yellow-200 px-3 py-1 rounded hover:bg-yellow-300"
@@ -460,7 +515,9 @@ useEffect(() => {
               {String(addOpenFor) === String(orderId) && (
                 <div id={`phone-extra-panel-${orderId}`} className="mt-3 border-t pt-3">
                   <p className="text-sm font-bold mb-2">추가 품목 선택</p>
-                  {menus.length === 0 && <p className="text-sm text-gray-500">메뉴를 불러오는 중…</p>}
+                  {menus.length === 0 && (
+                    <p className="text-sm text-gray-500">메뉴를 불러오는 중…</p>
+                  )}
                   {menus.map((m) => {
                     const q = qty[m.id] || 0;
                     const minQ = Number.isFinite(m.minOrderQuantity) ? m.minOrderQuantity : 0;
@@ -537,4 +594,3 @@ useEffect(() => {
     </AdminLayout>
   );
 }
-

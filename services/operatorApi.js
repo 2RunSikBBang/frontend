@@ -123,3 +123,13 @@ export async function updateStoreStatus(next) {
   unwrapOrThrow(resp?.data, "가게 상태 변경 실패");
   return true;
 }
+
+/** 주문 삭제: DELETE /store/{sid}/orders/{orderId}
+ *  응답: { success, code, message, data: { orderId, status: "deleted" } }
+ */
+export async function deleteOrder(orderId) {
+  const sid = getCurrentStoreId();
+  const resp = await api.delete(`/store/${sid}/orders/${orderId}`);
+  const data = unwrapOrThrow(resp?.data, "주문 삭제 실패");
+  return data; // { orderId, status: "deleted" }
+}
