@@ -1,4 +1,3 @@
-// pages/order.js
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/router";
 import { getMenus, getStoreInfo } from "../services/guestApi";

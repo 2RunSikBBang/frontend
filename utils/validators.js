@@ -1,4 +1,3 @@
-// utils/validators.js
 export const isNonEmpty = (v) => typeof v === "string" && v.trim().length > 0;
 
 // 010-1234-1234 형식

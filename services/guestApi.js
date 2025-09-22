@@ -1,4 +1,3 @@
-// services/guestApi.js
 import { apiPublic as api } from "../lib/axios";
 
 const STORE_ID = process.env.NEXT_PUBLIC_STORE_ID;
@@ -122,7 +121,7 @@ export async function getOrdersByPhone(phoneNumber) {
   return list;
 }
 
-/** 주문 생성: POST /guest/stores/{storeId}/orders */
+/** 주문 생성 */
 export async function createGuestOrder({ customer, items }) {
   const cleanedPhone = String(customer.phone || "").replace(/\D/g, "");
   if (!/^010\d{8}$/.test(cleanedPhone)) {

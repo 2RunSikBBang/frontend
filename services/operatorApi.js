@@ -1,4 +1,3 @@
-// services/operatorApi.js
 import api, {
   setAuthToken,
   clearAuthToken,
@@ -124,9 +123,7 @@ export async function updateStoreStatus(next) {
   return true;
 }
 
-/** 주문 삭제: DELETE /store/{sid}/orders/{orderId}
- *  응답: { success, code, message, data: { orderId, status: "deleted" } }
- */
+/** 주문 삭제 */
 export async function deleteOrder(orderId) {
   const sid = getCurrentStoreId();
   const resp = await api.delete(`/store/${sid}/orders/${orderId}`);

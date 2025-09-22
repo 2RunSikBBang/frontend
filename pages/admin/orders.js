@@ -1,4 +1,3 @@
-// pages/admin/orders.js
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useRouter } from "next/router";
 import AdminLayout from "../../components/AdminLayout";
@@ -9,7 +8,7 @@ import {
   updateStoreStatus,
   getStoreInfoForOperator,
   getCurrentStoreId,
-  deleteOrder, // ✅ 주문 삭제 API 사용
+  deleteOrder,
 } from "../../services/operatorApi";
 import { getAllStoreStatuses, getMenus, createGuestOrder } from "../../services/guestApi";
 
@@ -87,7 +86,7 @@ export default function AdminOrdersPage() {
   const [openOrderMenuId, setOpenOrderMenuId] = useState(null);
   const [savingOrderId, setSavingOrderId] = useState(null);
 
-  // ✅ 삭제 모드 토글 & 진행중 삭제 id
+  // 삭제 모드 토글 & 진행중 삭제 id
   const [showDelete, setShowDelete] = useState(false);
   const [deletingOrderId, setDeletingOrderId] = useState(null);
 
@@ -304,7 +303,7 @@ export default function AdminOrdersPage() {
     }
   };
 
-  // ✅ 삭제 처리
+  // 삭제 처리
   const confirmAndDelete = async (orderId) => {
     if (!showDelete) return; // 안전망
     const ok = window.confirm(`주문 #${orderId} 내역을 삭제하시겠습니까?\n삭제 후에는 복구할 수 없습니다.`);
@@ -362,7 +361,7 @@ export default function AdminOrdersPage() {
             )}
           </div>
 
-          {/* ✅ 삭제 모드 토글 (새로고침 버튼 왼쪽/같은 줄) */}
+          {/* 삭제 모드 토글 (새로고침 버튼 왼쪽/같은 줄) */}
           <button
             onClick={() => setShowDelete((v) => !v)}
             className={`rounded-xl px-3 py-2 text-sm font-bold ${
@@ -406,7 +405,7 @@ export default function AdminOrdersPage() {
                 <div className="flex items-center gap-2">
                   <div className="text-sm text-gray-500">{fmtTime(o.orderDate)}</div>
 
-                  {/* ✅ 삭제 모드일 때만 X버튼 노출 */}
+                  {/* 삭제 모드일 때만 X버튼 노출 */}
                   {showDelete && (
                     <button
                       type="button"

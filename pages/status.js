@@ -1,4 +1,3 @@
-// pages/status.js
 import Head from "next/head";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import Link from "next/link";

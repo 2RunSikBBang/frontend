@@ -2,7 +2,7 @@ import Link from "next/link";
 import Layout from "../components/Layout";
 
 export default function PrivacyPage() {
-  const lastUpdated = "2025-09-09"; // 수정 시 갱신
+  const lastUpdated = "2025-09-23"; // 수정 시 갱신
 
   return (
     <Layout>

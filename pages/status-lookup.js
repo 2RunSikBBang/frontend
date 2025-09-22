@@ -1,4 +1,3 @@
-// pages/status-lookup.js
 import { useState } from "react";
 import { useRouter } from "next/router";
 import Layout from "../components/Layout";

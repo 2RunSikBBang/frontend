@@ -1,4 +1,3 @@
-// pages/index.js
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/router";
 import Layout from "../components/Layout";

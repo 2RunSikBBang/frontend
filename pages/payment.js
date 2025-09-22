@@ -1,4 +1,3 @@
-// pages/payment.js
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import useOrderStore from "../store/orderStore";
