@@ -6,8 +6,8 @@ import Image from "next/image";
 const BASE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "").replace(/\/$/, "");
 const shareImage = (BASE_URL ? `${BASE_URL}/og-card.png` : "/og-card.png") + "?v=3";
 
-const SITE_TITLE = "이런식빵";
-const SITE_DESC = "강원대 춘천캠 배달 간식, 이런식빵 🍞";
+const SITE_TITLE = "이런식빵🍞";
+const SITE_DESC = "강원대 대동제 이런식빵 배달사이트";
 
 export default function Layout({ children }) {
   return (
