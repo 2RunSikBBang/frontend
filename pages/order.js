@@ -1,3 +1,4 @@
+// pages/order.js
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/router";
 import { getMenus, getStoreInfo } from "../services/guestApi";
@@ -19,39 +20,8 @@ export default function OrderPage() {
   const [quantities, setQuantities] = useState({}); // { [menuId]: number }
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [building, setBuilding] = useState("");     // 공과대학/백록관/국지원 등
-  const [detailAddr, setDetailAddr] = useState(""); // 자유 입력(고정 빌딩이면 무시)
+  const [address, setAddress] = useState(""); // ✅ 건물/상세 분리 없이 한 칸
   const [consent, setConsent] = useState(false);
-
-  // ─────────────────────────────────────────────────────────────
-  // 배달 가능 지역 & 건물별 상세주소 고정 문구
-  // - 기숙사(국지원/난지원/다산관/예지원/율곡관/퇴계관/새롬관 남/여) = 1층 수령 고정
-  // - 이룸관 = 2층 수령 고정
-  const BUILDING_OPTIONS = [
-    "경영대학", "공과대학", "글로벌경영관", "법학전문대학", "사회과학대학", "인문대학",
-    "백록관", "서암관", "석재", "한빛관", "한울관", "60주년기념관",
-    "국지원", "난지원", "다산관", "새롬관(남)", "새롬관(여)",
-    "예지원", "율곡관", "이룸관", "퇴계관"
-  ];
-
-  const FIXED_DETAIL_BY_BUILDING = {
-    "국지원": "1층에서 수령 바랍니다 (도착 전 전화 예정)",
-    "난지원": "1층에서 수령 바랍니다 (도착 전 전화 예정)",
-    "다산관": "1층에서 수령 바랍니다 (도착 전 전화 예정)",
-    "예지원": "1층에서 수령 바랍니다 (도착 전 전화 예정)",
-    "율곡관": "1층에서 수령 바랍니다 (도착 전 전화 예정)",
-    "퇴계관": "1층에서 수령 바랍니다 (도착 전 전화 예정)",
-    "새롬관(남)": "1층 CU 앞에서 수령 바랍니다 (도착 전 전화 예정)",
-    "새롬관(여)": "1층에서 수령 바랍니다 (도착 전 전화 예정)",
-    "이룸관": "2층에서 수령 바랍니다 (도착 전 전화 예정)",
-  };
-
-  const isFixedDetail = Boolean(FIXED_DETAIL_BY_BUILDING[building]);
-  const displayDetail = isFixedDetail
-    ? FIXED_DETAIL_BY_BUILDING[building]
-    : detailAddr;
-  // ─────────────────────────────────────────────────────────────
-
 
   // 메뉴 목록 불러오기
   useEffect(() => {
@@ -113,7 +83,7 @@ export default function OrderPage() {
 
   // 결제 진입 가능 여부
   const canProceed = hasActiveOrderStrict(
-    { name, phone, address: [building, displayDetail].filter(Boolean).join(" ") },
+    { name, phone, address },
     selectedItems
   );
 
@@ -142,13 +112,9 @@ export default function OrderPage() {
       return;
     }
 
-    // 지역/상세주소 검증
-    if (!building) {
-      alert("배달 지역을 선택해 주세요.");
-      return;
-    }
-    if (!isFixedDetail && displayDetail.trim().length === 0) {
-      alert("상세 주소를 입력해 주세요.");
+    // 주소 검증
+    if (address.trim().length === 0) {
+      alert("배달 받으실 주소를 입력해 주세요.");
       return;
     }
 
@@ -157,14 +123,13 @@ export default function OrderPage() {
       return;
     }
     if (!canProceed) {
-      alert("입력값을 확인해주세요.\n- 메뉴 선택(2개 이상)\n- 이름\n- 전화번호(010-1234-1234)\n- 배달 지역/상세주소");
+      alert("입력값을 확인해주세요.\n- 메뉴 선택(2개 이상)\n- 이름\n- 전화번호(010-1234-1234)\n- 주소");
       return;
     }
 
     // 로컬 저장
-    const fullAddress = [building, displayDetail].filter(Boolean).join(" ");
     setItems(selectedItems);
-    setCustomer({ name, phone, address: fullAddress });
+    setCustomer({ name, phone, address });
 
     router.push("/payment");
   };
@@ -176,8 +141,8 @@ export default function OrderPage() {
       {/* 메뉴 선택 */}
       <div className="bg-white p-4 rounded-xl shadow mb-4">
         <h2 className="font-bold mb-2">
-          1. 메뉴 선택 - {" "}
-          <span className="text-blue-500 text-base"> 개당 3,900원</span>
+          1. 메뉴 선택 -{" "}
+          <span className="text-blue-500 text-base">개당 3,900원</span>
         </h2>
 
         {loading && <p className="text-sm text-gray-500">메뉴를 불러오는 중...</p>}
@@ -194,7 +159,6 @@ export default function OrderPage() {
             <div key={menu.id} className="flex justify-between items-center mb-2">
               <div className="flex flex-col">
                 <span>{menu.name}</span>
-                {/* 최대 N개 안내 문구는 숨김(요청사항) */}
                 {minQ > 0 && (
                   <span className="text-xs text-gray-500">최소 {minQ}개부터 배달 가능</span>
                 )}
@@ -224,7 +188,9 @@ export default function OrderPage() {
         <p className="font-bold mt-2">
           총 주문금액: {totalPrice.toLocaleString("ko-KR")}원
         </p>
-        <p className="text-xs text-gray-500 mt-1">현재 선택 수량: {totalQty}개 (2개 이상부터 주문 가능)</p>
+        <p className="text-xs text-gray-500 mt-1">
+          현재 선택 수량: {totalQty}개 (2개 이상부터 주문 가능)
+        </p>
       </div>
 
       {/* 주문자 정보 입력 */}
@@ -250,41 +216,19 @@ export default function OrderPage() {
           <p className="text-xs text-blue-500 mb-2">전화번호는 010-1234-1234 형식이어야 해요.</p>
         )}
 
-        {/* 배달 지역 선택 */}
-        <label className="block font-bold mt-2 mb-1">배달 지역</label>
-        <select
-          className="w-full border rounded p-2 mb-2 bg-white"
-          value={building}
-          onChange={(e) => setBuilding(e.target.value)}
-        >
-          <option value="">건물을 선택하세요</option>
-          {BUILDING_OPTIONS.map((b) => (
-            <option key={b} value={b}>{b}</option>
-          ))}
-        </select>
-
-        {/* 상세 주소(고정/자유) */}
-        <label className="block font-bold mb-1">상세 주소</label>
+        {/* 자유 주소 한 칸 */}
+        <label className="block font-bold mt-2 mb-1">주소</label>
         <textarea
-          placeholder={isFixedDetail ? "" : "예) 2호관 3층 301호, 1층 중앙로비 앞 등 수령 위치"}
-          value={displayDetail}
-          onChange={(e) => {
-            if (!isFixedDetail) setDetailAddr(e.target.value);
-          }}
-          readOnly={isFixedDetail}
-          className={`w-full border rounded p-2 mb-2 ${isFixedDetail ? "bg-gray-100 text-gray-700" : ""}`}
+          placeholder="예) 공과대학 2호관 OOO호 / OO관 OO호 / 이룸관 2층 등 정확한 수령 위치를 적어주세요"
+          value={address}
+          onChange={(e) => setAddress(e.target.value)}
+          className="w-full border rounded p-2 mb-2"
         />
-        {building && (
-          <p className="text-xs text-gray-500 mt-1">
-            선택한 지역: <b>{building}</b>
-            {isFixedDetail
-              ? ` · 이 건물은 ${
-                  /2층/.test(FIXED_DETAIL_BY_BUILDING[building]) ? "2층" : "1층"
-            } 수령만 가능합니다(수정 불가).`
-              : " · 수령 위치/호수 등을 자세히 적어주세요."}
+        {address.length > 0 && (
+          <p className="text-xs text-blue-500 mb-2">
+            배달은 강원대학교 춘천캠퍼스 내에서만 가능해요.
           </p>
         )}
-
       </div>
 
       {/* 개인정보 수집·이용 동의 (필수) */}
